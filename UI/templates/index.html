@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini Search Engine - DSA Project</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 30px 20px;
+            background: #f5f5f5;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #2c5aa0;
+            font-size: 1.3em;
+        }
+
+        .stat-label {
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .search-box {
+            margin-bottom: 30px;
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-container {
+            position: relative;
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 15px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #2c5aa0;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #2c5aa0;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #1e3f7a;
+        }
+
+        .autocomplete-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 80px;
+            background: white;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .autocomplete-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .autocomplete-item:hover {
+            background: #f0f0f0;
+        }
+
+        .results {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .meta {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .meta strong {
+            color: #2c5aa0;
+        }
+
+        .result-item {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #fafafa;
+            border-left: 4px solid #2c5aa0;
+            border-radius: 4px;
+        }
+
+        .result-rank {
+            display: inline-block;
+            background: #2c5aa0;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            margin-right: 10px;
+        }
+
+        .score {
+            color: #28a745;
+            font-weight: bold;
+            font-size: 0.95em;
+            margin-bottom: 8px;
+        }
+
+        .path {
+            color: #555;
+            font-size: 0.85em;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+        }
+
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #f5c6cb;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1>🔍 Mini Search Engine</h1>
+        <p style="color: #666; margin-top: 5px;">DSA-Based Information Retrieval System</p>
+        <div class="stats">
+            <div class="stat-item">
+                <span class="stat-value">{{ "{:,}".format(total_docs) }}</span>
+                <span class="stat-label">Documents</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">{{ "{:,}".format(vocab_size) }}</span>
+                <span class="stat-label">Terms</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">TF-IDF</span>
+                <span class="stat-label">Ranking</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="search-box">
+        <form method="POST" id="searchForm">
+            <div class="search-container">
+                <input type="text" name="query" id="queryInput"
+                    placeholder="Enter search terms (e.g., computer graphics, neural network)..." value="{{ query }}"
+                    autocomplete="off">
+                <button type="submit">Search</button>
+                <div class="autocomplete-suggestions" id="suggestions"></div>
+            </div>
+        </form>
+    </div>
+
+    {% if message %}
+    <p class="error">{{ message }}</p>
+    {% endif %}
+
+    {% if query %}
+    <div class="results">
+        <p class="meta">
+            Found <strong>{{ results|length }}</strong> documents in <strong>{{ "%.4f"|format(duration) }}</strong>
+            seconds
+            {% if results|length > 0 %}(Top 10 by TF-IDF Score){% endif %}
+        </p>
+
+        {% for path, score in results %}
+        <div class="result-item">
+            <div class="score">
+                <span class="result-rank">#{{ loop.index }}</span>
+                TF-IDF Score: {{ "%.6f"|format(score) }}
+            </div>
+            <div class="path">{{ path }}</div>
+        </div>
+        {% else %}
+        <div class="no-results">
+            <p>📭 No documents found matching your query.</p>
+            <p style="font-size: 0.9em; margin-top: 10px;">Try different keywords or check spelling.</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <script>
+        const queryInput = document.getElementById('queryInput');
+        const suggestionsDiv = document.getElementById('suggestions');
+        let debounceTimer;
+
+        queryInput.addEventListener('input', function () {
+            clearTimeout(debounceTimer);
+            const query = this.value.trim();
+
+            if (query.length < 2) {
+                suggestionsDiv.style.display = 'none';
+                return;
+            }
+
+            debounceTimer = setTimeout(() => {
+                fetch(`/autocomplete?q=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(suggestions => {
+                        if (suggestions.length > 0) {
+                            suggestionsDiv.innerHTML = suggestions
+                                .map(s => `<div class="autocomplete-item" onclick="selectSuggestion('${s}')">${s}</div>`)
+                                .join('');
+                            suggestionsDiv.style.display = 'block';
+                        } else {
+                            suggestionsDiv.style.display = 'none';
+                        }
+                    });
+            }, 300);
+        });
+
+        function selectSuggestion(term) {
+            queryInput.value = term;
+            suggestionsDiv.style.display = 'none';
+            document.getElementById('searchForm').submit();
+        }
+
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', function (e) {
+            if (!queryInput.contains(e.target)) {
+                suggestionsDiv.style.display = 'none';
+            }
+        });
+    </script>
+
+</body>
+
+</html>
